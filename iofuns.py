@@ -319,37 +319,98 @@ def read_bin_file(file_name: str) -> np.array:
         A depth map or a normal map, arranged as an `(H, W)` or an `(H, W, 3)` array, respectively.
     """
 
-    with open(file_name, "rb") as fid:
+    # with open(file_name, "rb") as fid:
 
-        # Read the file header. It is in the format 'width&height&channel_nb&' where channel_nb is 1 for 2D data.
-        width, height, channel_nb = np.genfromtxt(fid, delimiter="&", max_rows=1, usecols=(0, 1, 2), dtype=int)
-        fid.seek(0)
-        num_delimiter = 0
-        byte = fid.read(1)
+    #     # Read the file header. It is in the format 'width&height&channel_nb&' where channel_nb is 1 for 2D data.
+    #     width, height, channel_nb = np.genfromtxt(fid, delimiter="&", max_rows=1, usecols=(0, 1, 2), dtype=int)
+    #     fid.seek(0)
+    #     num_delimiter = 0
+    #     byte = fid.read(1)
 
-        while True:
+    #     while True:
 
-            if byte == b"&":
-                num_delimiter += 1
-                if num_delimiter >= 3:
-                    break
+    #         if byte == b"&":
+    #             num_delimiter += 1
+    #             if num_delimiter >= 3:
+    #                 break
 
+    #         byte = fid.read(1)
+
+    #     # Read the data, stored as float32 in C-like order.
+    #     data = np.fromfile(fid, np.float32)
+
+    # # Reshape the read data into a (width, height, channel_nb) array.
+    # data = data.reshape((width, height, channel_nb), order='F')
+
+    # # Transpose the data to get an array in the (height, width, channel_nb) format.
+    # data = np.transpose(data, (1, 0, 2))
+
+    # # In the case of 2D data, remove the last dimension.
+    # if channel_nb == 1:
+    #     data = data[:, :, 0]
+
+    # return data
+    from pathlib import Path
+
+    print(file_name)
+    file_ext = None
+    if file_name is not None:
+      file_ext = Path(file_name).suffix
+
+    if file_ext == '.npy':
+        # Handle .npy files
+        depth_map = np.load(file_name)
+
+        # Ensure the depth map is 2D
+        if depth_map.ndim != 2:
+            raise ValueError("Depth map in .npy file must be 2D.")
+
+        height, width = depth_map.shape
+        channel_nb = 1  # Depth maps are single-channel
+
+        # Convert the depth map to float32
+        depth_map = depth_map.astype(np.float32)
+
+        # Reshape and transpose to match COLMAP format
+        depth_map = depth_map.T  # Transpose to match C-like order
+
+        return depth_map
+
+    elif file_ext == '.bin':
+        # Handle COLMAP binary files
+        with open(file_name, "rb") as fid:
+            # Read the file header. It is in the format 'width&height&channel_nb&'.
+            width, height, channel_nb = np.genfromtxt(fid, delimiter="&", max_rows=1, usecols=(0, 1, 2), dtype=int)
+            fid.seek(0)
+            num_delimiter = 0
             byte = fid.read(1)
 
-        # Read the data, stored as float32 in C-like order.
-        data = np.fromfile(fid, np.float32)
+            while True:
+                if byte == b"&":
+                    num_delimiter += 1
+                    if num_delimiter >= 3:
+                        break
+                byte = fid.read(1)
 
-    # Reshape the read data into a (width, height, channel_nb) array.
-    data = data.reshape((width, height, channel_nb), order='F')
+            # Read the data, stored as float32 in C-like order.
+            data = np.fromfile(fid, np.float32)
 
-    # Transpose the data to get an array in the (height, width, channel_nb) format.
-    data = np.transpose(data, (1, 0, 2))
+        # Reshape the read data into a (width, height, channel_nb) array.
+        data = data.reshape((width, height, channel_nb), order='F')
 
-    # In the case of 2D data, remove the last dimension.
-    if channel_nb == 1:
-        data = data[:, :, 0]
+        # Transpose the data to get an array in the (height, width, channel_nb) format.
+        data = np.transpose(data, (1, 0, 2))
 
-    return data
+        # In the case of 2D data, remove the last dimension.
+        if channel_nb == 1:
+            data = data[:, :, 0]
+
+        return data
+
+    else:
+      return None
+        #raise ValueError("Unsupported file format. Expected .npy or .bin file.")
+
 
 
 def write_bin_file(data: np.array, file_name: str) -> None:

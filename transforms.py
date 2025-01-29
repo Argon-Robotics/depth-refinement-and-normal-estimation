@@ -80,7 +80,7 @@ def depth2depth_inv(depth: Union[np.array, torch.Tensor]) -> Union[np.array, tor
 
 
 def depth_inv2depth(depth_inv: Union[np.array, torch.Tensor],
-                    depth_range: Tuple[np.float, np.float] = DEFAULT_DEPTH_RANGE) -> Union[np.array, torch.Tensor]:
+                    depth_range: Tuple[float, float] = DEFAULT_DEPTH_RANGE) -> Union[np.array, torch.Tensor]:
     """It reverts the operation of the function `depth2depth_inv()`.
 
     It reverts the operation of the function `depth2depth_inv()` by applying the transformation `1 / depth_inv`
